@@ -26,9 +26,9 @@ This project aims to:
 
 ariac_entry
 ├── launch/
-│   └── Entry.launch
+│   └── competition.launch
 ├── src/
-│   └── node_entry.cpp
+│   └── node_source.cpp
 ├── CMakeLists.txt
 ├── package.xml
 └── README.md
@@ -93,12 +93,29 @@ roslaunch ecse_373_ariac ecse_373_ariac.launch
 ### Run the Node
 Start the **`orders_subscriber_node`**:
 ```bash
-rosrun ariac_entry orders_subscriber_node
+rosrun ariac_entry ariac_entry_node
+```
+### Manually start the competition if needed:
+```bash
+rosservice call /ariac/start_competition "{}"
 ```
 ### Publish Test Orders
 Publish a test order to verify the node functionality:
 ```bash
 rostopic pub /ariac/orders osrf_gear/Order "{order_id: 'test_order', shipments: [{shipment_type: 'test_shipment', products: [{type: 'gear_part', pose: {position: {x: 0.1, y: 0.2, z: 0.0}, orientation: {x: 0, y: 0, z: 0, w: 1}}}]}]}"
+```
+Manually publish a trajectory to confirm the robot can move:
+```bash
+rostopic pub /ariac/arm1/arm/command trajectory_msgs/JointTrajectory "header:
+  seq: 0
+  stamp: {secs: 0, nsecs: 0}
+  frame_id: ''
+joint_names: ['linear_arm_actuator_joint', 'shoulder_pan_joint', 'shoulder_lift_joint', 'elbow_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint']
+points:
+- positions: [0.0, 0.0, -1.57, 0.0, 0.0, 0.0, 0.0]
+  velocities: []
+  accelerations: []
+  time_from_start: {secs: 1, nsecs: 0}"
 ```
 
 ---

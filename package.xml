@@ -53,6 +53,13 @@
   <build_depend>ik_service</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>rviz</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>trajectory_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>std_srvs</build_depend>
+  <build_depend>tf2_ros</build_depend>
+  <build_depend>tf2_geometry_msgs</build_depend>
+  <build_depend>osrf_gear</build_depend>
   <build_export_depend>ecse_373_ariac</build_export_depend>
   <build_export_depend>ik_service</build_export_depend>
   <build_export_depend>roscpp</build_export_depend>
@@ -61,10 +68,13 @@
   <exec_depend>ik_service</exec_depend>
   <exec_depend>roscpp</exec_depend>
   <exec_depend>rviz</exec_depend>
-  <depend>std_srvs</depend>
-  <depend>osrf_gear</depend>
-  <depend>tf2_ros</depend>
-  <depend>geometry_msgs</depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>trajectory_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>std_srvs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>tf2_geometry_msgs</exec_depend>
+  <exec_depend>osrf_gear</exec_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

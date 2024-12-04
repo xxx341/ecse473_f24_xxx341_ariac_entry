@@ -14,6 +14,11 @@ find_package(catkin REQUIRED COMPONENTS
   rviz
   std_srvs
   osrf_gear
+  sensor_msgs
+  trajectory_msgs
+  geometry_msgs
+  tf2_ros
+  tf2_geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -106,6 +111,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
+  INCLUDE_DIRS include
+  CATKIN_DEPENDS roscpp sensor_msgs trajectory_msgs geometry_msgs std_srvs tf2_ros tf2_geometry_msgs osrf_gear ik_service
 #  INCLUDE_DIRS include
 #  LIBRARIES ariac_entry
 #  CATKIN_DEPENDS ecse_373_ariac ik_service roscpp rviz
@@ -119,7 +126,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
 )
 

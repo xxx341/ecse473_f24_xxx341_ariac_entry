@@ -1,9 +1,0 @@
-<launch>
-    <!-- Launch the ARIAC environment -->
-    <include file="$(find ecse_373_ariac)/launch/ecse_373_ariac.launch" />
-
-    <!-- Launch the ariac_entry_node -->
-    <node name="ariac_entry_node" pkg="ariac_entry" type="ariac_entry_node" output="screen">
-        <!-- Arguments can be added here if needed -->
-    </node>
-</launch>
