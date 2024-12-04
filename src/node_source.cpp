@@ -9,8 +9,12 @@
 #include <trajectory_msgs/JointTrajectory.h>
 #include <trajectory_msgs/JointTrajectoryPoint.h>
 #include <sensor_msgs/JointState.h>
+#include <actionlib/client/simple_action_client.h>
+#include <control_msgs/FollowJointTrajectoryAction.h>
 #include <ik_service/PoseIK.h>
 #include <vector>
+#include <rosgraph_msgs/Clock.h>
+
 
 // Global vector to store received orders
 std::vector<osrf_gear::Order> order_vector;
@@ -198,7 +202,55 @@ bool isValidPose(const geometry_msgs::Pose &pose) {
     return true;
 }
 
+// Action Client callbacks
+void goalActiveCallback() {
+    ROS_INFO("Goal is now active.");
+}
 
+void feedbackCallback(const control_msgs::FollowJointTrajectoryFeedbackConstPtr& feedback) {
+    ROS_INFO_STREAM("Feedback received from joint: " << feedback->joint_names[0]);
+}
+
+void resultCallback(const actionlib::SimpleClientGoalState& state, const control_msgs::FollowJointTrajectoryResultConstPtr& result) {
+    ROS_INFO("Goal finished with state: %s", state.toString().c_str());
+}
+
+// Function to send a trajectory to the Action Server
+void sendTrajectory(actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction>& trajectory_ac, 
+                    const std::vector<trajectory_msgs::JointTrajectoryPoint>& points) {
+    control_msgs::FollowJointTrajectoryGoal ac_goal;
+
+    // Set trajectory header
+    ac_goal.trajectory.header.stamp = ros::Time::now();
+    ac_goal.trajectory.header.frame_id = "arm1_base_link";
+
+    // Specify joint names (assuming UR10 joint order with linear actuator)
+    ac_goal.trajectory.joint_names = {
+        "linear_arm_actuator_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "elbow_joint",
+        "wrist_1_joint",
+        "wrist_2_joint",
+        "wrist_3_joint"
+    };
+
+    // Add points to the trajectory
+    for (const auto& point : points) {
+        ac_goal.trajectory.points.push_back(point);
+    }
+
+    // Send the goal to the Action Server
+    trajectory_ac.sendGoal(ac_goal, &resultCallback, &goalActiveCallback, &feedbackCallback);
+
+    // Wait for the goal to finish (optional blocking)
+    trajectory_ac.waitForResult(ros::Duration(10.0));
+    if (trajectory_ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED) {
+        ROS_INFO("Trajectory successfully executed.");
+    } else {
+        ROS_ERROR("Trajectory execution failed with state: %s", trajectory_ac.getState().toString().c_str());
+    }
+}
 
 // Function to find the part location using the material_location service
 std::string findPartLocation(ros::ServiceClient &location_client, const std::string &part_type) {
@@ -219,13 +271,42 @@ std::string findPartLocation(ros::ServiceClient &location_client, const std::str
     return "";
 }
 
+// Function to generate trajectory points for specific poses
+std::vector<trajectory_msgs::JointTrajectoryPoint> generateTrajectoryPoints() {
+    std::vector<trajectory_msgs::JointTrajectoryPoint> points;
 
+    // Example point 1
+    trajectory_msgs::JointTrajectoryPoint point1;
+    point1.positions = {0.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};  // Replace with real positions
+    point1.time_from_start = ros::Duration(2.0);
+    points.push_back(point1);
+
+    // Example point 2
+    trajectory_msgs::JointTrajectoryPoint point2;
+    point2.positions = {0.1, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6};  // Replace with real positions
+    point2.time_from_start = ros::Duration(4.0);
+    points.push_back(point2);
+
+    return points;
+}
 
 
 int main(int argc, char **argv) {
     // Initialize the ROS node
     ros::init(argc, argv, "ariac_entry_node");
     ros::NodeHandle nh;
+    
+    // Ensure /clock is publishing before proceeding
+    ROS_INFO("Waiting for /clock to start publishing...");
+    while (!ros::topic::waitForMessage<rosgraph_msgs::Clock>("/clock", ros::Duration(10.0))) {
+        ROS_WARN("Still waiting for /clock...");
+    }
+    ROS_INFO("/clock is now publishing!");
+
+    
+    // Async spinner to handle callbacks
+    ros::AsyncSpinner spinner(1);
+    spinner.start();
 
     // Service clients
     ros::ServiceClient start_client = nh.serviceClient<std_srvs::Trigger>("/ariac/start_competition");
@@ -234,6 +315,10 @@ int main(int argc, char **argv) {
 
     // Subscriber to the orders topic
     ros::Subscriber order_sub = nh.subscribe("/ariac/orders", 10, orderCallback);
+    
+    // Subscribe to joint states
+    ros::Subscriber joint_states_sub = nh.subscribe("/ariac/arm1/joint_states", 10, jointStatesCallback);
+
 
     // Publisher for joint trajectory
     ros::Publisher trajectory_pub = nh.advertise<trajectory_msgs::JointTrajectory>("/ariac/arm1/arm/command", 10);
@@ -248,9 +333,29 @@ int main(int argc, char **argv) {
         ROS_ERROR("Exiting due to failure in starting competition.");
         return -1;
     }
+    
+    // Wait for Action Server
+    actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> trajectory_ac("ariac/arm/follow_joint_trajectory", true);
+    ROS_INFO("Waiting for Action Server to start...");
+    trajectory_ac.waitForServer();
+    ROS_INFO("Action Server started.");
+    
+    ROS_INFO("Waiting for Action Server to start...");
+    trajectory_ac.waitForServer();
+    ROS_INFO("Action Server started.");
+    
+    // Generate trajectory points for moving above piston_rod_part
+    std::vector<trajectory_msgs::JointTrajectoryPoint> trajectory_points = generateTrajectoryPoints();
+
+    // Send trajectory to Action Server
+    sendTrajectory(trajectory_ac, trajectory_points);
+
+    // Keep the node alive
+    ros::waitForShutdown();
 
     // Main processing loop
     ros::Rate rate(10);
+    
     while (ros::ok()) {
         if (!order_vector.empty()) {
             // Process the first order in the queue

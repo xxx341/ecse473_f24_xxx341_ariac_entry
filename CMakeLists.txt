@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   ecse_373_ariac
   ik_service
   roscpp
+  rosgraph_msgs
   rviz
   std_srvs
   osrf_gear
@@ -19,6 +20,8 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   tf2_ros
   tf2_geometry_msgs
+  actionlib
+  control_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -112,7 +115,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS roscpp sensor_msgs trajectory_msgs geometry_msgs std_srvs tf2_ros tf2_geometry_msgs osrf_gear ik_service
+  CATKIN_DEPENDS roscpp sensor_msgs trajectory_msgs geometry_msgs std_srvs tf2_ros tf2_geometry_msgs osrf_gear ik_service rosgraph_msgs
 #  INCLUDE_DIRS include
 #  LIBRARIES ariac_entry
 #  CATKIN_DEPENDS ecse_373_ariac ik_service roscpp rviz
@@ -166,6 +169,7 @@ add_dependencies(ariac_entry_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_E
 
 target_link_libraries(ariac_entry_node
     ${catkin_LIBRARIES}
+    pthread
 )
 
 #############
@@ -174,6 +178,10 @@ target_link_libraries(ariac_entry_node
 
 # all install targets should use catkin DESTINATION variables
 # See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
+
+install(TARGETS ariac_entry_node
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
@@ -203,12 +211,20 @@ target_link_libraries(ariac_entry_node
 #   PATTERN ".svn" EXCLUDE
 # )
 
+install(DIRECTORY launch
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES
 #   # myfile1
 #   # myfile2
 #   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+
 
 #############
 ## Testing ##

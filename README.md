@@ -1,24 +1,21 @@
-# ARIAC Orders Subscriber Node
+# ARIAC Orders Subscriber and Trajectory Execution Node
 
-This repository contains a ROS package that implements a node to handle orders in the ARIAC (Agile Robotics for Industrial Automation Competition) simulation environment. The node subscribes to the `/ariac/orders` topic to receive incoming orders, queries the `/ariac/material_locations` service to retrieve storage locations for parts, and logs the results for further processing.
+This repository contains a ROS package designed to handle orders and execute trajectories in the ARIAC (Agile Robotics for Industrial Automation Competition) simulation environment. The node subscribes to the `/ariac/orders` topic to receive incoming orders, queries the `/ariac/material_locations` service for part locations, generates trajectories to pick up parts, and sends these trajectories to the Action Server for execution.
 
 ---
 
 ## Introduction
 
-The ARIAC Orders Subscriber Node is designed to support a simulated industrial automation system. It processes orders by:
-1. Subscribing to the `/ariac/orders` topic to receive order details.
-2. Querying the `/ariac/material_locations` service to locate required parts.
-3. Logging the results to assist in planning the robotic operations for fulfilling the orders.
+This ROS package integrates ARIAC simulation features into custom ROS nodes for industrial automation. It processes orders and uses the `/ariac/arm/follow_joint_trajectory` Action Server to command the robot to execute trajectories based on detected parts.
 
 ---
 
 ## Objectives
 
 This project aims to:
-- Demonstrate proficiency in ROS topics and services.
-- Integrate ARIAC simulation features into custom ROS nodes.
-- Develop a system capable of parsing and processing industrial automation orders.
+1. Demonstrate proficiency in ROS topics, services, and actions.
+2. Develop a trajectory execution pipeline using the Action Server.
+3. Implement logical camera-based part detection and transformation to generate robot trajectories.
 
 ---
 
@@ -48,9 +45,10 @@ ariac_entry
 
 ## Features
 
-- **Order Processing**: Automatically processes incoming orders by subscribing to the `/ariac/orders` topic.
-- **Material Location Query**: Utilizes the `/ariac/material_locations` service to identify the storage locations of required parts.
-- **Extensibility**: Provides a modular foundation for extending functionality to robotic motion planning or task execution.
+- **Order Processing**: Automatically processes incoming orders from the `/ariac/orders` topic.
+- **Part Detection**: Uses logical cameras to detect parts and calculate their poses relative to the robot.
+- **Trajectory Execution**: Generates and sends trajectories to the Action Server for robot motion.
+- **Service Integration**: Utilizes the `/ariac/material_locations` service for storage locations.
 
 ---
 
@@ -58,11 +56,14 @@ ariac_entry
 
 - **Operating System**: Ubuntu 20.04
 - **ROS Distribution**: ROS Noetic
-- **ARIAC Environment**: Ensure the ARIAC simulation environment is installed and configured.
+- **ARIAC Environment**: Ensure the ARIAC simulation is installed and configured.
 - **Dependencies**:
   - `osrf_gear` package
   - `roscpp`
-  - `std_msgs`
+  - `actionlib`
+  - `control_msgs`
+  - `trajectory_msgs`
+  - `rosgraph_msgs`
 
 ---
 
@@ -142,8 +143,15 @@ points:
    ```bash
    rostopic pub /ariac/orders osrf_gear/Order "{order_id: 'test_order', shipments: [{shipment_type: 'test_shipment', products: [{type: 'gear_part', pose: {position: {x: 0.1, y: 0.2, z: 0.0}, orientation: {x: 0, y: 0, z: 0, w: 1}}}]}]}"
    ```
-3. **Check Logs**: Confirm the node logs the part locations retrieved from the service.
-4. **Service Test**: Test the **`/ariac/material_locations`** service independently:
+3. **Check Action Server**: Verify the robot executes trajectories.
    ```bash
-   rosservice call /ariac/material_locations "{material_type: 'gear_part'}"
+   rostopic echo /ariac/arm/follow_joint_trajectory/status
    ```
+4. **Inspect Logs**: Use **`rqt_console`** to monitor the node's behavior.
+
+---
+
+## Known Issues
+- Simulated Time: Ensure **`/clock`** is publishing by running the simulation before the node.
+- Gazebo Performance: Run Gazebo with sufficient resources in a native or well-configured VM environment.
+   
